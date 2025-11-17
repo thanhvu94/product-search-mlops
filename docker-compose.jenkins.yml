@@ -11,7 +11,6 @@ services:
     # --- END OF CHANGE ---
 
     container_name: jenkins-server
-    network_mode: "host"
     ports:
       - "8080:8080"  # Jenkins UI
       - "50000:50000" # For agents

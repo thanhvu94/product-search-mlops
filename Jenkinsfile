@@ -17,6 +17,7 @@ pipeline {
         // Your Docker Hub info (same as before)
         DOCKER_HUB_USER         = "vunt94"
         IMAGE_NAME              = "product-search-app"
+        // Credentials
         DOCKER_CREDENTIAL_ID    = "docker-creds"
         
         // --- (USER) EDIT THESE ---
