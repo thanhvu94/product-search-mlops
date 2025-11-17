@@ -1,8 +1,14 @@
 // This file MUST be at the root of your Git repository.
-
 pipeline {
     // Run this pipeline on any agent
     agent any
+
+    options{
+        // Max number of build logs to keep and days to keep
+        buildDiscarder(logRotator(numToKeepStr: '5', daysToKeepStr: '5'))
+        // Enable timestamp at each job in the pipeline
+        timestamps()
+    }
 
     // --- (USER) EDIT THESE VARIABLES ---
     // These environment variables are used in the pipeline stages.
@@ -29,61 +35,54 @@ pipeline {
 
     stages {
         // ---------------------------------
-        // CI (Continuous Integration)
+        // CI - Test
         // ---------------------------------
-
-        stage('Checkout') {
-            steps {
-                // Get the code from Git
-                echo 'Checking out code...'
-                checkout scm
-            }
-        }
-
-        stage('Build Docker Image') {
-            steps {
-                // Build the product-search-app image using the Dockerfile
-                echo "Building image: ${env.DOCKER_HUB_USER}/${env.IMAGE_NAME}:${env.BUILD_NUMBER}"
-                script {
-                    docker.build("${env.DOCKER_HUB_USER}/${env.IMAGE_NAME}:${env.BUILD_NUMBER}", ".")
+        stage('Test') {
+            agent {
+                // Use a Python 3.11 image to match our Dockerfile
+                docker {
+                    image 'python:3.11' 
                 }
             }
-        }
-
-        stage('Run Tests') {
             steps {
-                // --- PLACEHOLDER ---
-                // This is where you would run tests (e.g., pytest)
-                // Example: docker.image(...).inside { sh 'pytest' }
-                echo "Running tests... (placeholder)"
+                echo 'Testing model correctness...'
+                // Install all requirements and run pytest
+                // We add --timeout=600 for the pip install, just in case
+                sh 'pip install --timeout=600 -r requirements.txt && pytest'
             }
         }
 
-        stage('Push to Docker Hub') {
+        // ---------------------------------
+        // CI - Build & Push
+        // ---------------------------------
+        stage('Build') {
             steps {
-                // Log in to Docker Hub and push the new image
-                echo "Pushing image to Docker Hub..."
                 script {
-                    // Use the 'docker-creds' credentials from Jenkins
+                    echo "Building image for deployment..."
+                    // Build the image and tag it with the build number
+                    // This uses the Docker Pipeline plugin, not the 'docker' command
+                    def dockerImage = docker.build("${env.DOCKER_HUB_USER}/${env.IMAGE_NAME}:${env.BUILD_NUMBER}", ".")
+                    
+                    echo "Pushing image to dockerhub..."
+                    // Log in to Docker Hub using our credential ID
                     docker.withRegistry("https://registry.hub.docker.com", env.DOCKER_CREDENTIAL_ID) {
-                        
                         // Push the build-number-tagged image
-                        docker.image("${env.DOCKER_HUB_USER}/${env.IMAGE_NAME}:${env.BUILD_NUMBER}").push()
+                        dockerImage.push()
                         
                         // Also tag this build as 'latest' and push it
-                        docker.image("${env.DOCKER_HUB_USER}/${env.IMAGE_NAME}:${env.BUILD_NUMBER}").push("latest")
+                        dockerImage.push("latest")
                     }
                 }
             }
         }
 
         // ---------------------------------
-        // CD (Continuous Deployment)
+        // CD - Deploy
         // ---------------------------------
-
-        stage('Deploy to Production') {
+        stage('Deploy') {
             steps {
-                // Use the 'prod-ssh-key' credentials to log in to your server
+                echo "Deploying new image to server..."
+                // Use the 'prod-ssh-key' credentials to log in to our server
                 sshagent([env.SSH_CREDENTIAL_ID]) {
                     
                     // SSH into the server and run the deployment commands
@@ -108,20 +107,6 @@ pipeline {
                     """
                 }
             }
-        }
-    }
-
-    // ---------------------------------
-    // POST-BUILD ACTIONS
-    // ---------------------------------
-    post {
-        always {
-            // Clean up the built image from the Jenkins server to save space
-            script {
-                sh "docker rmi ${env.DOCKER_HUB_USER}/${env.IMAGE_NAME}:${env.BUILD_NUMBER}"
-                sh "docker rmi ${env.DOCKER_HUB_USER}/${env.IMAGE_NAME}:latest"
-            }
-            echo 'Cleanup complete.'
         }
     }
 }

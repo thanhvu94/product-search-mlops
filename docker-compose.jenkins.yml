@@ -2,17 +2,22 @@ version: '3.8'
 
 services:
   jenkins-server:
-    image: jenkins/jenkins:lts-jdk11
+    # --- THIS IS THE FIX ---
+    # We are now using the latest 'lts' tag,
+    # which will be newer than 2.452.4
+    image: jenkins/jenkins:lts
+    # --- END OF CHANGE ---
+
     container_name: jenkins-server
     ports:
       - "8080:8080"  # Jenkins UI
       - "50000:50000" # For agents
     volumes:
       - jenkins_home:/var/jenkins_home
-      # Mount the Docker socket from the host machine
-      # This allows Jenkins to run Docker commands
+      # Mount the Docker socket
       - /var/run/docker.sock:/var/run/docker.sock
     # Run as root inside the container to have permission to access the Docker socket
+    # This is still required.
     user: root
 
 volumes:
