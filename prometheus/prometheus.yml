@@ -1,0 +1,9 @@
+global:
+  scrape_interval: 15s # By default, scrape every 15 seconds.
+
+scrape_configs:
+  - job_name: 'product-search-service'
+    # Scrape the /metrics endpoint on our app
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['product-search-app:8000'] # 'product-search-app' is the service name in docker-compose

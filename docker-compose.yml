@@ -1,0 +1,125 @@
+version: '3.8'
+
+volumes:
+  prometheus_data: {}
+  grafana_data: {}
+  elasticsearch_data: {}
+
+networks:
+  observability-net:
+
+services:
+  # 1. Your FastAPI Application
+  product-search-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: product-search-app
+    ports:
+      - "8000:8000"
+    environment:
+      # OTLP endpoint for Jaeger
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger-all-in-one:4317
+    networks:
+      - observability-net
+    logging:
+      # Send logs directly to Logstash via the gelf driver
+      driver: gelf
+      options:
+        gelf-address: "udp://127.0.0.1:12201" # Must be localhost/127.0.0.1
+    depends_on:
+      - jaeger-all-in-one
+      - logstash
+
+  # 2. Prometheus (Metrics)
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    container_name: prometheus
+    volumes:
+      - ./prometheus/:/etc/prometheus/
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    ports:
+      - "9090:9090"
+    networks:
+      - observability-net
+    depends_on:
+      - product-search-app
+
+  # 3. Grafana (Metrics Visualization)
+  grafana:
+    image: grafana/grafana:11.1.0
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning/:/etc/grafana/provisioning/
+      - ./grafana/dashboards/:/var/lib/grafana/dashboards/
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    networks:
+      - observability-net
+    depends_on:
+      - prometheus
+
+  # 4. Jaeger (Tracing)
+  jaeger-all-in-one:
+    image: jaegertracing/all-in-one:1.53
+    container_name: jaeger-all-in-one
+    ports:
+      - "16686:16686" # Jaeger UI
+      - "4317:4317"   # OTLP gRPC endpoint
+    networks:
+      - observability-net
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+
+  # 5. Elasticsearch (Logs Storage)
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.14.0
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false # Disable security for simplicity
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m" # Set heap size
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+    networks:
+      - observability-net
+
+  # 6. Logstash (Logs Processing)
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.14.0
+    container_name: logstash
+    command: logstash -f /usr/share/logstash/pipeline/logstash.conf
+    volumes:
+      - ./logstash/pipeline:/usr/share/logstash/pipeline:ro
+    ports:
+      - "5044:5044"
+      - "12201:12201/udp" # GELF input
+    networks:
+      - observability-net
+    depends_on:
+      - elasticsearch
+
+  # 7. Kibana (Logs Visualization)
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.14.0
+    container_name: kibana
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    networks:
+      - observability-net
+    depends_on:
+      - elasticsearch
