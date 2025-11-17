@@ -2,10 +2,12 @@ version: '3.8'
 
 services:
   jenkins-server:
-    # --- THIS IS THE FIX ---
-    # We are now using the latest 'lts' tag,
-    # which will be newer than 2.452.4
-    image: jenkins/jenkins:lts
+    # --- THIS IS THE CHANGE ---
+    # Instead of 'image:', we use 'build:' to create our custom image
+    build:
+      context: .
+      dockerfile: jenkins.Dockerfile
+    # image: jenkins/jenkins:lts  <-- We are replacing this line
     # --- END OF CHANGE ---
 
     container_name: jenkins-server
@@ -17,7 +19,6 @@ services:
       # Mount the Docker socket
       - /var/run/docker.sock:/var/run/docker.sock
     # Run as root inside the container to have permission to access the Docker socket
-    # This is still required.
     user: root
 
 volumes:
