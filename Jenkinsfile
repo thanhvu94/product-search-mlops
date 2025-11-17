@@ -28,7 +28,7 @@ pipeline {
         PROD_SERVER_USER        = "ubuntu" 
         
         // Jenkins is SSH-ing to its own host VM
-        PROD_SERVER_IP          = "172.31.31.126" 
+        PROD_SERVER_IP          = "54.206.93.56" 
         
         // The *absolute path* where you cloned your repo on the EC2 VM
         PROD_COMPOSE_PATH       = "/home/ubuntu/product-search-stack"
