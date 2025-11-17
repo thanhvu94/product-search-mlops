@@ -6,6 +6,7 @@ pytest
 faiss-cpu
 dvc
 python-dotenv
+httpx
 opentelemetry-api==1.19.0
 opentelemetry-sdk==1.19.0
 opentelemetry-instrumentation-asgi==0.40b0
