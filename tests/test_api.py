@@ -1,9 +1,8 @@
-# test_main.py
 import pytest
 from fastapi.testclient import TestClient
 from unittest.mock import MagicMock, patch
-from main import create_app
 import json
+from main import create_app
 
 # Create the test client using the FastAPI app
 app = create_app()
@@ -31,7 +30,7 @@ def test_search_by_text_missing_query_fails():
 # Test search_by_image API
 # -------------------------
 def test_search_by_image_success():
-    with open("test/sample.jpg", "rb") as f:
+    with open("tests/sample.jpg", "rb") as f:
         files = {"file": ("sample.jpg", f, "image/jpeg")}
         response = client.post("/search_by_image", files=files)
     
@@ -60,10 +59,10 @@ def test_upsert_product_success():
             "metadata": {"color": "red", "category": "apparel"}
         }
         metadata = json.dumps(raw_metadata)
-        files = {"file": ("sample.jpg", b"dummy content", "text/plain")}
+        files = {"file": ("sample.jpg", b"dummy content", "image/jpeg")}
         data = {"metadata_json": metadata}
 
-        response = client.post("/upsert_product", files=files, data=metadata)
+        response = client.post("/upsert_product", files=files, data=data)
 
         # Assertions
         assert response.status_code == 200

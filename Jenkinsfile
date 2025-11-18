@@ -49,7 +49,7 @@ pipeline {
                 echo 'Testing model correctness...'
                 // Install all requirements and run pytest
                 // We add --timeout=600 for the pip install, just in case
-                sh 'pip install --timeout=600 -r requirements.txt'
+                sh 'pip install --timeout=600 -r requirements.txt && pytest'
             }
         }
 
