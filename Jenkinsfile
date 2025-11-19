@@ -96,12 +96,12 @@ pipeline {
                             
                             # 1. Pull the new image (tagged 'latest')
                             echo "Pulling new image: ${env.DOCKER_HUB_USER}/${env.IMAGE_NAME}:latest"
-                            docker-compose pull product-search-app
+                            docker compose pull product-search-app
                             
                             # 2. Restart *only* the app container
                             # --no-deps stops docker-compose from touching other running services
                             echo "Restarting product-search-app container..."
-                            docker-compose up -d --no-deps product-search-app
+                            docker compose up -d --no-deps product-search-app
                             
                             echo "Deployment complete!"
                         '''
