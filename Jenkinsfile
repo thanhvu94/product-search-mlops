@@ -60,18 +60,14 @@ pipeline {
             steps {
                 script {
                     echo "Building image for deployment..."
-                    // Build the image and tag it with the build number
-                    // This uses the Docker Pipeline plugin, not the 'docker' command
-                    def dockerImage = docker.build("${env.DOCKER_HUB_USER}/${env.IMAGE_NAME}:${env.BUILD_NUMBER}", ".")
+                    sh "docker build --platform linux/amd64 -t ${env.DOCKER_HUB_USER}/${env.IMAGE_NAME}:${env.BUILD_NUMBER} ."
+                    sh "docker tag ${env.DOCKER_HUB_USER}/${env.IMAGE_NAME}:${env.BUILD_NUMBER} ${env.DOCKER_HUB_USER}/${env.IMAGE_NAME}:latest"
                     
                     echo "Pushing image to dockerhub..."
-                    // Log in to Docker Hub using our credential ID
                     docker.withRegistry("https://registry.hub.docker.com", env.DOCKER_CREDENTIAL_ID) {
-                        // Push the build-number-tagged image
-                        dockerImage.push()
-                        
-                        // Also tag this build as 'latest' and push it
-                        dockerImage.push("latest")
+                        // We use sh commands to push because we tagged them manually above
+                        sh "docker push ${env.DOCKER_HUB_USER}/${env.IMAGE_NAME}:${env.BUILD_NUMBER}"
+                        sh "docker push ${env.DOCKER_HUB_USER}/${env.IMAGE_NAME}:latest"
                     }
                 }
             }
