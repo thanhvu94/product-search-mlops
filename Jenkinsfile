@@ -25,13 +25,13 @@ pipeline {
         SSH_CREDENTIAL_ID       = "prod-ssh-key"
         
         // Your username on the EC2 VM
-        PROD_SERVER_USER        = "ubuntu" 
+        PROD_SERVER_USER        = "vu.thanh.nguyen" 
         
         // Jenkins is SSH-ing to its own host VM
         PROD_SERVER_IP          = "136.112.134.188" 
         
         // The *absolute path* where you cloned your repo on the EC2 VM
-        PROD_COMPOSE_PATH       = "/home/ubuntu/product-search-stack"
+        PROD_COMPOSE_PATH       = "/home/vu.thanh.nguyen/product-search-stack"
     }
 
     stages {
