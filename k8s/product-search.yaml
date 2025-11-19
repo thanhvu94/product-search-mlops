@@ -1,0 +1,55 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: product-search-config
+data:
+  # Define non-sensitive config here
+  # Note: For secrets like PINECONE_API_KEY, it is better to use a Secret
+  # but for simplicity in this guide, we use a ConfigMap or environment vars
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://prometheus-stack-kube-prom-prometheus.monitoring:9090" # Placeholder
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: product-search-app
+  labels:
+    app: product-search
+spec:
+  replicas: 3 # Requirement: 3 replicas
+  selector:
+    matchLabels:
+      app: product-search
+  template:
+    metadata:
+      labels:
+        app: product-search
+    spec:
+      containers:
+      - name: product-search-app
+        image: vunt94/product-search-app:latest # Ensure this image exists on Docker Hub
+        ports:
+        - containerPort: 8000
+        env:
+        # Add your secrets here directly or reference a k8s Secret
+        - name: PINECONE_API_KEY
+          value: k_46kXT7_36deFBTV7K74ANhJ6gDcpNvAUQpy9o18pNxVGrHuVESSApnmFrg81SKJKBkMKDR
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1024Mi"
+            cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: product-search-service
+spec:
+  selector:
+    app: product-search
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8000
+  type: LoadBalancer # On AWS, this creates an ELB to expose your app
