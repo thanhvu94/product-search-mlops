@@ -35,10 +35,10 @@ spec:
           value: k_46kXT7_36deFBTV7K74ANhJ6gDcpNvAUQpy9o18pNxVGrHuVESSApnmFrg81SKJKBkMKDR
         resources:
           requests:
-            memory: "512Mi"
+            memory: "1Gi"
             cpu: "250m"
           limits:
-            memory: "1024Mi"
+            memory: "2Gi"
             cpu: "500m"
 ---
 apiVersion: v1
