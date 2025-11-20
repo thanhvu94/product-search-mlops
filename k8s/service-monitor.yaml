@@ -1,0 +1,18 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: product-search-monitor
+  namespace: monitoring
+  labels:
+    release: prometheus-stack # IMPORTANT: Must match the Helm release name label
+spec:
+  selector:
+    matchLabels:
+      app: product-search # Matches your Service label
+  namespaceSelector:
+    matchNames:
+      - default # Assuming your app is in the 'default' namespace
+  endpoints:
+  - port: "8000" # The port name or number defined in your Service
+    path: /metrics # Your app's metric path
+    interval: 15s
