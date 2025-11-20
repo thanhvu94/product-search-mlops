@@ -13,6 +13,6 @@ spec:
     matchNames:
       - default # Assuming your app is in the 'default' namespace
   endpoints:
-  - port: "8000" # The port name or number defined in your Service
-    path: /metrics # Your app's metric path
+  - port: api-port
+    path: /metrics
     interval: 15s

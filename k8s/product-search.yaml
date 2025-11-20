@@ -49,7 +49,8 @@ spec:
   selector:
     app: product-search
   ports:
-    - protocol: TCP
+    - name: api-port
+      protocol: TCP
       port: 80
       targetPort: 8000
-  type: LoadBalancer # On AWS, this creates an ELB to expose your app
+  type: ClusterIP
