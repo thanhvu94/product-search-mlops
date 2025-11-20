@@ -8,7 +8,7 @@ metadata:
 spec:
   selector:
     matchLabels:
-      app: product-search-app # Matches your Service label
+      app: product-search # Matches your Service label
   namespaceSelector:
     matchNames:
       - default # Assuming your app is in the 'default' namespace
