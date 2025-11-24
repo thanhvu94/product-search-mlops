@@ -16,11 +16,9 @@
 ### Introduction
 This **Product Search** project aims at building a scalable system that can retrieve relevant items from a catalog using either images or text queries. Using `DeepFashion Product Images` dataset, it offer three basic use cases for e-commerce product search: upserting new products, searching by image, and searching by text. The solution is deployed on Cloud (GCP) & k8s with a CI/CD pipeline, and is monitored via observability services.
 
-**Data Source:**
-- [DeepFashion Product Images](https://www.kaggle.com/datasets/paramaggarwal/fashion-product-images-small?select=styles.csv)
+**Data Source:** [DeepFashion Product Images](https://www.kaggle.com/datasets/paramaggarwal/fashion-product-images-small?select=styles.csv)
 
 ### Architecture
-**Overall Architecture:**
 ![System Architecture](./images/architecture.png)
 
 **Technology Stack:**
@@ -36,27 +34,39 @@ This **Product Search** project aims at building a scalable system that can retr
 
 ## Local deployment
 ### Initial setup
-Clone the repository:
+1. Clone the repository:
 ```
-git clone [https://github.com/thanhvu94/product-search-mlops.git](https://github.com/thanhvu94/product-search-mlops.git) product-search
+git clone https://github.com/thanhvu94/product-search-mlops.git product-search
 cd product-search
 ```
+2. Open Docker Desktop
 ### Run with Docker
-Navigate to `src/` folder, then build and run the service on Docker:
+Inside `product-search`, build and run the service on Docker:
 ```
-cd src
 docker compose up --build -d
 ```
-Once everything is running, you can access all the UIs from your browser.
+Once everything is running, you can access all the UIs from your browser
 - FastAPI App: http://localhost:8000/docs
 - Grafana (Metrics): http://localhost:3000 (Login: admin / admin)
 - Jaeger (Traces): http://localhost:16686
 - Prometheus: http://localhost:9090
 
-### CI/CD
-1. Navigate to `src/` folder, then build and run Jenkins:
+## Cloud
+### Initial setup on GCP
+1. Enable `Compute Engine API`
+2. Choose `VM Instance` and create a new EC2 VM instance
+- Machine type: `e2-standard-4` (4 vCPU, 16GB mem)
+- Disk: 100GB
+3. In `VPC Network > Firewall`, click `Create firewall rule` to set up allowed ports.
+4. Back to `Compute Engine > VM Instances`, click Edit your VM Machine:
+- On `Network tags`, add the label name of the firewall rule in step 3.
+- On `SSH Keys`, click `Add item` and copy public SSH key content generated on your local machine (`cat ~/.ssh/id_rsa.pub`)
+5. Remote access to EC2 VM instance `ssh -i ~/.ssh/id_rsa <VM_USERNAME>@<VM_PUBLIC_IP>
+6. For new VM, install: docker-compose, minikube, kubectl
+
+### CI/CD (Test-Build-Deploy) with Jenkins
+1. Inside `product-search`, build and run Jenkins on Docker:
 ```
-cd src
 docker compose -f docker-compose.jenkins.yml up --build -d
 ```
 2. Run this command to get the initial password for Jenkins access:
@@ -89,23 +99,10 @@ docker exec jenkins-server cat /var/jenkins_home/secrets/initialAdminPassword
   - Branches to build: */main
   - Script Path: Jenkinsfile
 7. Click `Build Now`. You can check `Output Console` to see the build progress.
-8. After build success, you can see a new image with `latest` tag pushed here: https://hub.docker.com/r/vunt94/product-search-app/tags
+8. After stage `Build` success, you can see a new image with `latest` tag pushed here: https://hub.docker.com/r/vunt94/product-search-app/tags
 ![CI/CD image build](./images/jenkins_image_build.png)
 
-## Cloud
-### Initial setup on GCP
-1. Enable `Compute Engine API`
-2. Choose `VM Instance` and create a new EC2 VM instance
-- Machine type: `e2-standard-4` (4 vCPU, 16GB mem)
-- Disk: 30GB
-3. In `VPC Network > Firewall`, click `Create firewall rule` to set up allowed ports.
-3. Back to `Compute Engine > VM Instances`, click Edit your VM Machine:
-- On `Network tags`, add the label name of the firewall rule in step 3.
-- On `SSH Keys`, click `Add item` and copy public SSH key content generated on your local machine (`cat ~/.ssh/id_rsa.pub`)
-4. Remote access to EC2 VM instance `ssh -i ~/.ssh/id_rsa <VM_USERNAME>@<VM_PUBLIC_IP>
-5. For new VM, install: docker, minikube
-
-### Deploy on GCP
+### Deploy on GCP with k8s
 1. SSH to your VM on GCP
 2. Clone the source code from git
 ```
@@ -142,11 +139,16 @@ kubectl apply -f k8s/service-monitor.yaml
 ```
 8. Enable port-forwarding for our services
 ```
-kubectl port-forward svc/product-search-service 8000:80 --address 0.0.0.0 &
-kubectl port-forward svc/prometheus-stack-grafana 3000:80 -n monitoring --address 0.0.0.0 &
-kubectl port-forward svc/prometheus-stack-kube-prom-prometheus 9090:9090 -n monitoring --address 0.0.0.0 &
+kubectl port-forward svc/product-search-service 8000:80 --address 0.0.0.0 > /dev/null 2>&1 &
+kubectl port-forward svc/prometheus-stack-grafana 3000:80 -n monitoring --address 0.0.0.0 > /dev/null 2>&1 &
+kubectl port-forward svc/prometheus-stack-kube-prom-prometheus 9090:9090 -n monitoring --address 0.0.0.0 > /dev/null 2>&1 &
 ```
 9. Open Prometheus & Grafana
 - FastAPI App: http://<VM_EXTERNAL_IP>:8000/docs
 - Grafana (Metrics): http://<VM_EXTERNAL_IP>:3000 (Login: admin / admin)
 - Prometheus: http://<VM_EXTERNAL_IP>:9090
+10. After finished, you can stop pods / minikube by:
+```
+minikube stop
+minikube delete
+```

@@ -12,7 +12,7 @@ metadata:
   labels:
     app: product-search
 spec:
-  replicas: 2
+  replicas: 3
   selector:
     matchLabels:
       app: product-search
