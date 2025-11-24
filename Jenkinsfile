@@ -52,7 +52,7 @@ pipeline {
             steps {
                 echo 'Testing model ...'
                 // Install requirements and run PyTest
-                sh 'pip install --timeout=600 -r requirements.txt && pytest'
+                sh 'pip install  --upgrade-strategy only-if-needed --timeout=600 -r requirements.txt && pytest'
             }
         }
 
