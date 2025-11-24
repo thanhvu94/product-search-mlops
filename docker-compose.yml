@@ -48,10 +48,8 @@ services:
       options:
         gelf-address: "udp://127.0.0.1:12201"
     depends_on:
-      jaeger:
-        condition: service_started
-      elasticsearch:
-        condition: service_healthy
+      - jaeger
+      - elasticsearch
 
   # 2. Prometheus
   prometheus:
@@ -151,8 +149,7 @@ services:
     networks:
       - monitoring
     depends_on:
-      elasticsearch:
-        condition: service_healthy
+      - elasticsearch
 
   # Kibana for log visualization
   kibana:
@@ -165,5 +162,4 @@ services:
     networks:
       - monitoring
     depends_on:
-      elasticsearch:
-        condition: service_healthy
+      - elasticsearch
