@@ -21,32 +21,17 @@ pipeline {
         PROD_SERVER_USER        = "vunguyen" 
         PROD_SERVER_IP          = "136.112.134.188"  // Public IP of EC2 VM
         PROD_COMPOSE_PATH       = "/home/vunguyen/product-search"
+        PINECONE_API_KEY        = "k_46kXT7_36deFBTV7K74ANhJ6gDcpNvAUQpy9o18pNxVGrHuVESSApnmFrg81SKJKBkMKDR"
 
         // Run Jenkins with same version as Docker
         DOCKER_API_VERSION      = "1.41"
     }
 
     stages {
-        stage('Setup Secrets') {
-            agent any
-            steps {
-                script {
-                    // Use the withCredentials block to map the secret ID to the env var name
-                    withCredentials([string(credentialsId: 'pinecone-api-key', variable: 'PINECONE_API_KEY')]) {
-                        // Set the PINECONE_API_KEY in the global environment object (env)
-                        // This makes it available in all subsequent stages using ${env.PINECONE_API_KEY}
-                        env.PINECONE_API_KEY = PINECONE_API_KEY
-                        echo 'Pinecone API key has been securely initialized.'
-                    }
-                }
-            }
-        }
-        
         stage('Test') {
             agent {
                 docker {
                     image 'python:3.11' 
-                    args "-e PINECONE_API_KEY=${env.PINECONE_API_KEY}"
                 }
             }
             steps {
@@ -81,9 +66,6 @@ pipeline {
                     sh """
                         ssh -o StrictHostKeyChecking=no ${env.PROD_SERVER_USER}@${env.PROD_SERVER_IP} '''
                             echo "Logged in to production server!"
-
-                            # Setup PINECONE_API_KEY
-                            export PINECONE_API_KEY=${env.PINECONE_API_KEY}
                             
                             # Navigate to the docker-compose project directory
                             cd ${env.PROD_COMPOSE_PATH}
