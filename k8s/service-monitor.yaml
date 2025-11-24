@@ -4,14 +4,14 @@ metadata:
   name: product-search-monitor
   namespace: monitoring
   labels:
-    release: prometheus-stack # IMPORTANT: Must match the Helm release name label
+    release: prometheus-stack
 spec:
   selector:
     matchLabels:
-      app: product-search # Matches your Service label
+      app: product-search
   namespaceSelector:
     matchNames:
-      - default # Assuming your app is in the 'default' namespace
+      - default
   endpoints:
   - port: api-port
     path: /metrics

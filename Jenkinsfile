@@ -31,10 +31,9 @@ pipeline {
             agent any
             steps {
                 script {
-                    // Use the withCredentials block to map the secret ID to the env var name
+                    // Map API key of PINECONE_API_KEY via ID
                     withCredentials([string(credentialsId: 'pinecone-api-key', variable: 'PINECONE_API_KEY')]) {
-                        // Set the PINECONE_API_KEY in the global environment object (env)
-                        // This makes it available in all subsequent stages using ${env.PINECONE_API_KEY}
+                        // Set global, accessible by all subsequent stages
                         env.PINECONE_API_KEY = PINECONE_API_KEY
                         echo 'Pinecone API key has been securely initialized.'
                     }
@@ -46,13 +45,13 @@ pipeline {
             agent {
                 docker {
                     image 'python:3.11' 
-                    args "-e PINECONE_API_KEY=${env.PINECONE_API_KEY} -e OTEL_SDK_DISABLED=true"
+                    args "-e PINECONE_API_KEY=${env.PINECONE_API_KEY}"
                 }
             }
             steps {
                 echo 'Testing model ...'
                 // Install requirements and run PyTest
-                sh 'pip install --upgrade-strategy only-if-needed --timeout=600 -r requirements.txt && pytest'
+                sh 'pip install --timeout=600 -r requirements.txt && pytest'
             }
         }
 

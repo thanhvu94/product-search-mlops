@@ -19,7 +19,10 @@ def test_search_by_text_success():
     assert response.status_code == 200
     data = response.json()
     assert "results" in data
-    assert "id" in data["results"]
+    
+    # 'results' is a list and is NOT empty
+    assert isinstance(data["results"], list)
+    assert len(data["results"]) > 0
 
 def test_search_by_text_missing_query_fails():
     payload = {"top_k": 5}
@@ -37,7 +40,10 @@ def test_search_by_image_success():
     assert response.status_code == 200
     data = response.json()
     assert "results" in data
-    assert "id" in data["results"]
+    
+    # 'results' is a list and is NOT empty
+    assert isinstance(data["results"], list)
+    assert len(data["results"]) > 0
 
 def test_search_by_image_missing_image_fails():
     payload = {"top_k": 5}

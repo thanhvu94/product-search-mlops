@@ -12,7 +12,7 @@ def create_app():
     app = FastAPI(title="Product Search")
 
     # Init tracing & metrics
-    setup_tracing(app, "product-search")
+    # setup_tracing(app, "product-search")
     setup_metrics(app)
     logging.info("Telemetry and metrics setup complete.")
 
