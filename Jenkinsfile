@@ -27,14 +27,30 @@ pipeline {
     }
 
     stages {
+        stage('Setup Secrets') {
+            agent any
+            steps {
+                script {
+                    // Use the withCredentials block to map the secret ID to the env var name
+                    withCredentials([string(credentialsId: 'pinecone-api-key', variable: 'PINECONE_API_KEY')]) {
+                        // Set the PINECONE_API_KEY in the global environment object (env)
+                        // This makes it available in all subsequent stages using ${env.PINECONE_API_KEY}
+                        env.PINECONE_API_KEY = PINECONE_API_KEY
+                        echo 'Pinecone API key has been securely initialized.'
+                    }
+                }
+            }
+        }
+        
         stage('Test') {
             agent {
                 docker {
                     image 'python:3.11' 
+                    args "-e PINECONE_API_KEY=${env.PINECONE_API_KEY}"
                 }
             }
             steps {
-                echo 'Testing model correctness...'
+                echo 'Testing model ...'
                 // Install requirements and run PyTest
                 sh 'pip install --timeout=600 -r requirements.txt && pytest'
             }
@@ -65,6 +81,9 @@ pipeline {
                     sh """
                         ssh -o StrictHostKeyChecking=no ${env.PROD_SERVER_USER}@${env.PROD_SERVER_IP} '''
                             echo "Logged in to production server!"
+
+                            # Setup PINECONE_API_KEY
+                            export PINECONE_API_KEY=${env.PINECONE_API_KEY}
                             
                             # Navigate to the docker-compose project directory
                             cd ${env.PROD_COMPOSE_PATH}
