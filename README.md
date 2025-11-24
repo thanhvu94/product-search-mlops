@@ -6,10 +6,10 @@
 - [2. Local](#deploy-locally)
   - [i. Initial setup](#initial-setup)
   - [ii. Run application & monitoring services with Docker](#run-with-docker)
-  - [iii. Run CI/CD pipeline](#cicd)
 - [3. Cloud](#cloud)
-  - [i. Deploy on GCP with k8s](#deploy-on-gcp)
-  - [ii. CI/CD with Jenkins on cloud](#cicd-with-jenkins-on-cloud)
+  - [i. Initial setup on GCP](#initial-setup-on-gcp)
+  - [ii. CI/CD (Test-Build-Deploy) with Jenkins](#cicd-test-build-deploy-with-jenkins)
+  - [iii. Deploy on GCP with k8s](#deploy-on-gcp-with-k8s)
 
 
 ## Overview
@@ -63,11 +63,17 @@ Once everything is running, you can access all the UIs from your browser
 - On `SSH Keys`, click `Add item` and copy public SSH key content generated on your local machine (`cat ~/.ssh/id_rsa.pub`)
 5. Remote access to EC2 VM instance `ssh -i ~/.ssh/id_rsa <VM_USERNAME>@<VM_PUBLIC_IP>
 6. For new VM, install: docker-compose, minikube, kubectl
+7. Clone the source code from git
+```
+cd ~
+git clone https://github.com/thanhvu94/product-search-mlops.git product-search
+cd product-search
+```
 
 ### CI/CD (Test-Build-Deploy) with Jenkins
 1. Inside `product-search`, build and run Jenkins on Docker:
 ```
-docker compose -f docker-compose.jenkins.yml up --build -d
+docker-compose -f docker-compose.jenkins.yml up --build -d
 ```
 2. Run this command to get the initial password for Jenkins access:
 ```
@@ -98,33 +104,31 @@ docker exec jenkins-server cat /var/jenkins_home/secrets/initialAdminPassword
   - Credentials: vunguyen SSH key
   - Branches to build: */main
   - Script Path: Jenkinsfile
-7. Click `Build Now`. You can check `Output Console` to see the build progress.
+7. Click `Build Now`. You can check `Output Console` to see the build progress
 8. After stage `Build` success, you can see a new image with `latest` tag pushed here: https://hub.docker.com/r/vunt94/product-search-app/tags
 ![CI/CD image build](./images/jenkins_image_build.png)
 
 ### Deploy on GCP with k8s
-1. SSH to your VM on GCP
-2. Clone the source code from git
+0. Turn off running `product-search-app` container from CI/CD build
 ```
-cd ~
-git clone https://github.com/thanhvu94/product-search-mlops.git product-search
-cd product-search
+cd ~/product-search
+docker-compose down
 ```
-3. Start minikube
+1. Start minikube:
 ```
 minikube start --driver=docker --cpus=3 --memory=8192
 ```
-4. Apply the k8s configuration to launch 3 pods
+2. Inside `product-search`, apply the k8s configuration to launch 3 pods:
 ```
 kubectl apply -f k8s/product-search.yaml
 kubectl get pods
 ```
-5. Install helm & create a  separate namespace for monitoring
+3. Install helm & create a  separate namespace for monitoring
 ```
 curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 kubectl create namespace monitoring
 ```
-6. Add the Prometheus Community Repo
+4. Add the Prometheus Community Repo
 ```
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 helm repo update
@@ -132,22 +136,22 @@ helm install prometheus-stack prometheus-community/kube-prometheus-stack \
   --namespace monitoring \
   --set grafana.adminPassword='admin'
 ```
-7. Tell Prometheus to scrape metrics from product-search
+5. Tell Prometheus to scrape metrics from product-search
 ```
 kubectl label service product-search-service app=product-search
 kubectl apply -f k8s/service-monitor.yaml
 ```
-8. Enable port-forwarding for our services
+6. Enable port-forwarding for our services
 ```
-kubectl port-forward svc/product-search-service 8000:80 --address 0.0.0.0 > /dev/null 2>&1 &
-kubectl port-forward svc/prometheus-stack-grafana 3000:80 -n monitoring --address 0.0.0.0 > /dev/null 2>&1 &
-kubectl port-forward svc/prometheus-stack-kube-prom-prometheus 9090:9090 -n monitoring --address 0.0.0.0 > /dev/null 2>&1 &
+kubectl port-forward svc/product-search-service 8000:80 --address 0.0.0.0 &
+kubectl port-forward svc/prometheus-stack-grafana 3000:80 -n monitoring --address 0.0.0.0 &
+kubectl port-forward svc/prometheus-stack-kube-prom-prometheus 9090:9090 -n monitoring --address 0.0.0.0 &
 ```
-9. Open Prometheus & Grafana
+7. Open Prometheus & Grafana
 - FastAPI App: http://<VM_EXTERNAL_IP>:8000/docs
 - Grafana (Metrics): http://<VM_EXTERNAL_IP>:3000 (Login: admin / admin)
 - Prometheus: http://<VM_EXTERNAL_IP>:9090
-10. After finished, you can stop pods / minikube by:
+8. After finished, you can stop pods / minikube:
 ```
 minikube stop
 minikube delete
