@@ -1,19 +1,17 @@
 from prometheus_fastapi_instrumentator import Instrumentator
 
 def setup_metrics(app):
-    """
-    Instruments the FastAPI app to expose Prometheus metrics.
-    This automatically creates metrics like:
-    - http_requests_total
-    - http_requests_duration_seconds
-    - http_requests_in_progress_total
-    """
+    # Create an `Instrumentator` instance for Prometheus monitoring metrics of a FastAPI app
     instrumentator = Instrumentator(
-        excluded_handlers=["/metrics", "/health"], # Don't instrument the metrics/health endpoints
+        # Exclude the metrics/health endpoints
+        excluded_handlers=["/metrics", "/health"], 
     )
     
-    # Instrument the app
+    ## Attach this instrumentator to FastAPI app
+    # All HTTP requests will automatically update metrics
     instrumentator.instrument(app)
     
-    # Expose the /metrics endpoint
+    ## Expose the /metrics endpoint
+    # include_in_schema=False -> not appear in Swagger UI
+    # should_gzip=True -> compress output to save bandwidth
     instrumentator.expose(app, include_in_schema=False, should_gzip=True)

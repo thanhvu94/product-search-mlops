@@ -65,7 +65,7 @@ docker exec jenkins-server cat /var/jenkins_home/secrets/initialAdminPassword
 ```
 3. Choose `Install suggested plugins` and wait for installation. Then, create account and set URL to complete the setup.
 ![Jenkins](./images/jenkins_install.png)
-4. Go to `Manage Jenkins > Plugins > Available Plugins`, search and install: Docker, Docker Pipeline
+4. Go to `Manage Jenkins > Plugins > Available Plugins`, search and install: Docker, Docker Pipeline, SSH Agent
 5. Add credentials for Jenkins in `Account > Credentials`:
   - In **System**, choose `(global)` and click on `Add Credentials`.
   - `docker-creds` (for Docker Hub):
@@ -80,9 +80,15 @@ docker exec jenkins-server cat /var/jenkins_home/secrets/initialAdminPassword
     - Private key: 
       - Generate SSH key with this command `ssh-keygen -t rsa -b 4096` (no passphrase)
       - Choose `Enter directly`, and copy content from `cat ~/.ssh/id_rsa`
-6. Configure the Jenkinsfile in your repository to point to your server's IP
-7. Create the "Pipeline" job in the Jenkins UI
-8. Click "Build Now"
+6. Create the "Pipeline" job in the Jenkins UI
+- Click `Create new item`, enter item name & choose `Pipeline`
+- In `Pipeline` section, choose `Pipeline script from SCM`. 
+  - SCM: git
+  - Repository URL: https://github.com/thanhvu94/product-search-mlops.git
+  - Credentials: vunguyen SSH key
+  - Branches to build: */main
+  - Script Path: Jenkinsfile
+7. Click `Build Now`. You can check `Output Console` to see the build progress.
 
 ## Cloud
 ### Initial setup on GCP
@@ -95,13 +101,14 @@ docker exec jenkins-server cat /var/jenkins_home/secrets/initialAdminPassword
 - On `Network tags`, add the label name of the firewall rule in step 3.
 - On `SSH Keys`, click `Add item` and copy public SSH key content generated on your local machine (`cat ~/.ssh/id_rsa.pub`)
 4. Remote access to EC2 VM instance `ssh -i ~/.ssh/id_rsa <VM_USERNAME>@<VM_PUBLIC_IP>
-5. Install some libraries: docker, minikube ...
+5. For new VM, install: docker, minikube
 
 ### Deploy on GCP
 1. SSH to your VM on GCP
 2. Clone the source code from git
 ```
-git clone [https://github.com/thanhvu94/product-search-mlops.git](https://github.com/thanhvu94/product-search-mlops.git) product-search
+cd ~
+git clone https://github.com/thanhvu94/product-search-mlops.git product-search
 cd product-search
 ```
 3. Start minikube
@@ -128,14 +135,14 @@ helm install prometheus-stack prometheus-community/kube-prometheus-stack \
 ```
 7. Tell Prometheus to scrape metrics from product-search
 ```
-kubectl label service product-search-service app=product-search
+  kubectl label service product-search-service app=product-search
 kubectl apply -f k8s/service-monitor.yaml
 ```
 8. Enable port-forwarding for our services
 ```
-kubectl port-forward svc/product-search-service 8000:80 --address 0.0.0.0
-kubectl port-forward svc/prometheus-stack-grafana 3000:80 -n monitoring
-kubectl port-forward --address 0.0.0.0 -n monitoring svc/prometheus-stack-kube-prom-prometheus 9090:9090
+kubectl port-forward svc/product-search-service 8000:80 --address 0.0.0.0 &
+kubectl port-forward svc/prometheus-stack-grafana 3000:80 -n monitoring --address 0.0.0.0 &
+kubectl port-forward svc/prometheus-stack-kube-prom-prometheus 9090:9090 -n monitoring --address 0.0.0.0 &
 ```
 9. Open Prometheus & Grafana
 - FastAPI App: http://<VM_EXTERNAL_IP>:8000/docs

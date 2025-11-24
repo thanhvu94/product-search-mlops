@@ -2,24 +2,17 @@ version: '3.8'
 
 services:
   jenkins-server:
-    # --- THIS IS THE CHANGE ---
-    # Instead of 'image:', we use 'build:' to create our custom image
     build:
       context: .
       dockerfile: jenkins.Dockerfile
-    # image: jenkins/jenkins:lts  <-- We are replacing this line
-    # --- END OF CHANGE ---
 
     container_name: jenkins-server
-    #network_mode: "host"
     ports:
       - "8080:8080"  # Jenkins UI
-      - "50000:50000" # For agents
+      - "50000:50000"
     volumes:
       - jenkins_home:/var/jenkins_home
-      # Mount the Docker socket
       - /var/run/docker.sock:/var/run/docker.sock
-    # Run as root inside the container to have permission to access the Docker socket
     user: root
 
 volumes:

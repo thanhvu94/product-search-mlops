@@ -6,35 +6,58 @@ volumes:
   elasticsearch_data: {}
 
 networks:
-  observability-net:
+  monitoring:
 
 services:
-  # 1. Your FastAPI Application
+  # System metrics
+  node-exporter:
+    image: prom/node-exporter:v1.3.1
+    container_name: node-exporter
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    ports:
+      - 9100:9100
+    networks:
+      - monitoring
+
+  # FastAPI application
   product-search-app:
     build:
+      # Build image from Dockerfile in current context
       context: .
       dockerfile: Dockerfile
     container_name: product-search-app
     ports:
       - "8000:8000"
     environment:
-      # OTLP endpoint for Jaeger
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger-all-in-one:4317
+      # Set env variable: OTLP endpoint for Jaeger
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
+      - PINECONE_API_KEY=${PINECONE_API_KEY}
     networks:
-      - observability-net
+      - monitoring
     logging:
-      # Send logs directly to Logstash via the gelf driver
+      # Send logs to `logstash` container listened on localhost:12201
       driver: gelf
       options:
-        gelf-address: "udp://127.0.0.1:12201" # Must be localhost/127.0.0.1
+        gelf-address: "udp://127.0.0.1:12201"
     depends_on:
-      - jaeger-all-in-one
-      - logstash
+      jaeger:
+        condition: service_started
+      elasticsearch:
+        condition: service_healthy
 
-  # 2. Prometheus (Metrics)
+  # 2. Prometheus
   prometheus:
     image: prom/prometheus:v2.53.0
     container_name: prometheus
+    restart: unless-stopped
     volumes:
       - ./prometheus/:/etc/prometheus/
       - prometheus_data:/prometheus
@@ -46,14 +69,13 @@ services:
     ports:
       - "9090:9090"
     networks:
-      - observability-net
-    depends_on:
-      - product-search-app
+      - monitoring
 
-  # 3. Grafana (Metrics Visualization)
+  # 3. Grafana
   grafana:
     image: grafana/grafana:11.1.0
     container_name: grafana
+    restart: unless-stopped
     ports:
       - "3000:3000"
     volumes:
@@ -63,25 +85,40 @@ services:
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
-      - GF_USERS_ALLOW_SIGN_UP=false
     networks:
-      - observability-net
+      - monitoring
     depends_on:
       - prometheus
 
-  # 4. Jaeger (Tracing)
-  jaeger-all-in-one:
+  # 4. Jaeger
+  jaeger:
     image: jaegertracing/all-in-one:1.53
-    container_name: jaeger-all-in-one
+    container_name: jaeger
+    restart: unless-stopped
     ports:
       - "16686:16686" # Jaeger UI
-      - "4317:4317"   # OTLP gRPC endpoint
+      - "4317:4317"   # OTLP endpoint
     networks:
-      - observability-net
+      - monitoring
     environment:
       - COLLECTOR_OTLP_ENABLED=true
 
-  # 5. Elasticsearch (Logs Storage)
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    restart: unless-stopped
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+    ports:
+      - 8090:8080
+    networks:
+      - monitoring
+
+  # 5. ELK
+  # Elasticsearch for log storage
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.14.0
     container_name: elasticsearch
@@ -94,9 +131,14 @@ services:
     ports:
       - "9200:9200"
     networks:
-      - observability-net
+      - monitoring
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9200 >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
-  # 6. Logstash (Logs Processing)
+  # Logstash for log processing
   logstash:
     image: docker.elastic.co/logstash/logstash:8.14.0
     container_name: logstash
@@ -107,11 +149,12 @@ services:
       - "5044:5044"
       - "12201:12201/udp" # GELF input
     networks:
-      - observability-net
+      - monitoring
     depends_on:
-      - elasticsearch
+      elasticsearch:
+        condition: service_healthy
 
-  # 7. Kibana (Logs Visualization)
+  # Kibana for log visualization
   kibana:
     image: docker.elastic.co/kibana/kibana:8.14.0
     container_name: kibana
@@ -120,6 +163,7 @@ services:
     environment:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
     networks:
-      - observability-net
+      - monitoring
     depends_on:
-      - elasticsearch
+      elasticsearch:
+        condition: service_healthy
