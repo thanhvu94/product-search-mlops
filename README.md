@@ -89,6 +89,8 @@ docker exec jenkins-server cat /var/jenkins_home/secrets/initialAdminPassword
   - Branches to build: */main
   - Script Path: Jenkinsfile
 7. Click `Build Now`. You can check `Output Console` to see the build progress.
+8. After build success, you can see a new image with `latest` tag pushed here: https://hub.docker.com/r/vunt94/product-search-app/tags
+![CI/CD image build](./images/jenkins_image_build.png)
 
 ## Cloud
 ### Initial setup on GCP
@@ -135,7 +137,7 @@ helm install prometheus-stack prometheus-community/kube-prometheus-stack \
 ```
 7. Tell Prometheus to scrape metrics from product-search
 ```
-  kubectl label service product-search-service app=product-search
+kubectl label service product-search-service app=product-search
 kubectl apply -f k8s/service-monitor.yaml
 ```
 8. Enable port-forwarding for our services
@@ -148,16 +150,3 @@ kubectl port-forward svc/prometheus-stack-kube-prom-prometheus 9090:9090 -n moni
 - FastAPI App: http://<VM_EXTERNAL_IP>:8000/docs
 - Grafana (Metrics): http://<VM_EXTERNAL_IP>:3000 (Login: admin / admin)
 - Prometheus: http://<VM_EXTERNAL_IP>:9090
-
-### CI/CD with Jenkins on cloud
-1. Inside VM, navigate to `product-search/` folder, then build and run Jenkins:
-```
-cd src
-docker-compose -f docker-compose.jenkins.yml up -d
-```
-2. Now we can access Jenkins via http://<VM_EXTERNAL_IP>:8080
-3. Install plugins
-4. Set up credentials
-5. Configure the Jenkinsfile in your repository to point to your server's IP.
-6. Create the "Pipeline" job in the Jenkins UI.
-7. Click "Build Now"

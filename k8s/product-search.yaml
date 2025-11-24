@@ -28,7 +28,7 @@ spec:
         - containerPort: 8000
         env:
         - name: PINECONE_API_KEY
-          value: k_46kXT7_36deFBTV7K74ANhJ6gDcpNvAUQpy9o18pNxVGrHuVESSApnmFrg81SKJKBkMKDR
+          value: pcsk_46kXT7_36deFBTV7K74ANhJ6gDcpNvAUQpy9o18pNxVGrHuVESSApnmFrg81SKJKBkMKDR
         resources:
           requests:
             memory: "1Gi"
