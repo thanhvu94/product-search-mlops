@@ -50,6 +50,9 @@ Once everything is running, you can access all the UIs from your browser
 - Grafana (Metrics): http://localhost:3000 (Login: admin / admin)
 - Jaeger (Traces): http://localhost:16686
 - Prometheus: http://localhost:9090
+3. To run API `/upsert_product`, use the data downloaded from DeepFashion data source:
+- Folder `images`: product images, named by `product id`
+- File `styles.csv`: product metadata (must be converted to JSON string before upserting)
 
 ## Cloud
 ### Initial setup on GCP
