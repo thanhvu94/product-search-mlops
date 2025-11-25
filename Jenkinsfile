@@ -9,6 +9,7 @@ pipeline {
         timestamps()
     }
 
+    // Input parameters of your VM
     parameters {
         string(name: 'PROD_SERVER_IP', defaultValue: '127.0.0.1', description: 'Public IP of the target VM.')
         string(name: 'PROD_SERVER_USER', defaultValue: 'ubuntu', description: 'SSH Username of the target VM.')
