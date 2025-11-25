@@ -104,7 +104,8 @@ docker exec jenkins-server cat /var/jenkins_home/secrets/initialAdminPassword
   - Credentials: vunguyen SSH key
   - Branches to build: */main
   - Script Path: Jenkinsfile
-7. Click `Build Now`. You can check `Output Console` to see the build progress
+7. Click `Build with Parameters` and input your VM info (public IP & VM username).
+- You can check `Output Console` to see the build progress
 8. After stage `Build` success, you can see a new image with `latest` tag pushed here: https://hub.docker.com/r/vunt94/product-search-app/tags
 ![CI/CD image build](./images/jenkins_image_build.png)
 
