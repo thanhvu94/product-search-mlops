@@ -9,6 +9,11 @@ pipeline {
         timestamps()
     }
 
+    parameters {
+        string(name: 'PROD_SERVER_IP', defaultValue: '127.0.0.1', description: 'Public IP of the target VM.')
+        string(name: 'PROD_SERVER_USER', defaultValue: 'ubuntu', description: 'SSH Username of the target VM.')
+    }
+
     // Environment variables
     environment {
         // Docker
@@ -18,9 +23,7 @@ pipeline {
         
         // SSH credential on EC2 VM (GCP)
         SSH_CREDENTIAL_ID       = "prod-ssh-key"
-        PROD_SERVER_USER        = "vunguyen" 
-        PROD_SERVER_IP          = "136.112.134.188"  // Public IP of EC2 VM
-        PROD_COMPOSE_PATH       = "/home/vunguyen/product-search"
+        PROD_COMPOSE_PATH       = "/home/${env.PROD_SERVER_USER}/product-search"
 
         // Pinecone access
         PINECONE_API_KEY        = "pcsk_46kXT7_36deFBTV7K74ANhJ6gDcpNvAUQpy9o18pNxVGrHuVESSApnmFrg81SKJKBkMKDR"
