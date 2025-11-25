@@ -9,6 +9,11 @@ from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 import logging
 
 def setup_tracing(app: FastAPI, service_name: str):
+    # Disabled as Jaeger not available in `Test` stage for Jenkins build
+    if os.getenv("TESTING_MODE") == "true":
+        logging.info("Tracing disabled for tests.")
+        return
+    
     # OTLPSpanExporter: send trace data to Jaeger (via OTEL_EXPORTER_OTLP_ENDPOINT)
     try:
         span_exporter = OTLPSpanExporter()

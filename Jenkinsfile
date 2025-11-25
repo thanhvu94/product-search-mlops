@@ -38,7 +38,7 @@ pipeline {
             agent {
                 docker {
                     image 'python:3.11' 
-                    args "-e PINECONE_API_KEY=${env.PINECONE_API_KEY}"
+                    args "-e PINECONE_API_KEY=${env.PINECONE_API_KEY} -e TESTING_MODE=true"
                 }
             }
             steps {
